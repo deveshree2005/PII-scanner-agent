@@ -1,0 +1,9 @@
+node_modules/
+dist/
+out/
+*.db
+*.sqlite
+*.log
+.env
+Thumbs.db
+test-data/

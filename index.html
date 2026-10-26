@@ -1,0 +1,1920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PII Scanner Agent</title>
+
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --text: #172033;
+      --muted: #718096;
+      --border: #e5e9f2;
+      --danger: #dc2626;
+      --success: #15803d;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+
+    .app { display: flex; min-height: 100vh; }
+
+    .sidebar {
+      width: 245px;
+      flex-shrink: 0;
+      background: #111827;
+      color: white;
+      padding: 25px 15px;
+    }
+
+    .brand {
+      font-size: 20px;
+      font-weight: 750;
+      padding: 0 12px 28px;
+    }
+
+    .brand span { color: #818cf8; }
+
+    .nav-label {
+      margin: 20px 12px 9px;
+      color: #9ca3af;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 12px;
+      margin: 4px 0;
+      border: 0;
+      border-radius: 8px;
+      color: #cbd5e1;
+      background: transparent;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .nav-item:hover, .nav-item.active {
+      background: #293548;
+      color: white;
+    }
+
+    .nav-item.active { box-shadow: inset 3px 0 #818cf8; }
+
+    .main {
+      min-width: 0;
+      flex: 1;
+      padding: 28px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      margin-bottom: 27px;
+    }
+
+    h1 { margin: 0 0 7px; font-size: 27px; }
+    h2 { margin: 0 0 18px; font-size: 18px; }
+    p { line-height: 1.55; }
+
+    .subtitle, .muted {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 21px;
+      margin-bottom: 20px;
+      box-shadow: 0 3px 12px rgba(15, 23, 42, 0.025);
+    }
+
+    .stat-label { color: var(--muted); font-size: 13px; }
+    .stat-number { margin-top: 12px; font-size: 29px; font-weight: 750; }
+    .stat-icon { font-size: 22px; margin-bottom: 15px; }
+
+    .btn {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: white;
+      color: var(--text);
+      padding: 10px 14px;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .btn:hover { filter: brightness(.97); }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .btn-danger {
+      color: var(--danger);
+      border-color: #fecaca;
+      background: white;
+    }
+
+    .btn-small { padding: 7px 10px; font-size: 12px; }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin-bottom: 15px;
+      min-width: 0;
+    }
+
+    .field label { font-size: 13px; font-weight: 600; }
+
+    .field input, .field select, .field textarea, .search-input {
+      width: 100%;
+      min-width: 0;
+      padding: 11px 12px;
+      border: 1px solid #dbe1eb;
+      border-radius: 8px;
+      outline: none;
+      background: white;
+      color: var(--text);
+    }
+
+    .field input:focus, .field select:focus,
+    .field textarea:focus, .search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px #4f46e51a;
+    }
+
+    .search-input { max-width: 350px; }
+
+    .table-wrap { width: 100%; overflow-x: auto; }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    th {
+      text-align: left;
+      padding: 13px 12px;
+      background: #f8fafc;
+      color: #64748b;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+
+    td {
+      padding: 13px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody tr:hover { background: #fafbff; }
+
+    .badge {
+      display: inline-block;
+      border-radius: 20px;
+      padding: 5px 9px;
+      background: #eef2ff;
+      color: #4338ca;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .badge-success { background: #dcfce7; color: #166534; }
+    .badge-danger { background: #fee2e2; color: #991b1b; }
+    .badge-warning { background: #fef3c7; color: #92400e; }
+
+    .empty {
+      padding: 30px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .file-list {
+      padding: 0;
+      list-style: none;
+      margin: 0;
+    }
+
+    .file-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .notice {
+      border-radius: 9px;
+      padding: 12px 14px;
+      margin-bottom: 15px;
+      font-size: 13px;
+      background: #eef2ff;
+      color: #3730a3;
+    }
+
+    .notice.error { background: #fee2e2; color: #991b1b; }
+    .notice.success { background: #dcfce7; color: #166534; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0 16px;
+    }
+
+    .full-width { grid-column: 1 / -1; }
+    .hidden { display: none !important; }
+
+    .section-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .section-heading h2 { margin: 0; }
+
+    .footer-note {
+      margin-top: 22px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .check-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .check-label input { width: auto; }
+
+    code.pattern {
+      font-family: Consolas, monospace;
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 5px;
+    }
+
+    @media (max-width: 1000px) {
+      .sidebar { width: 210px; }
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .main { padding: 20px; }
+    }
+
+    @media (max-width: 680px) {
+      .app { flex-direction: column; }
+      .sidebar { width: 100%; padding: 16px; }
+      .brand { padding-bottom: 12px; }
+      .nav-label { margin-top: 12px; }
+      .nav-item { display: inline-flex; width: auto; }
+      .main { padding: 16px; }
+      .grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .card { padding: 15px; }
+      h1 { font-size: 22px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .full-width { grid-column: auto; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">PII <span>Scanner</span></div>
+
+    <div class="nav-label">WORKSPACE</div>
+    <button class="nav-item active" data-page="dashboard">▦ Dashboard</button>
+    <button class="nav-item" data-page="scanner">⌕ Scan Documents</button>
+    <button class="nav-item" data-page="history">◷ Scan History</button>
+
+    <div class="nav-label">ADMINISTRATION</div>
+    <button class="nav-item" data-page="admin">♙ Admin Panel</button>
+    <button class="nav-item" data-page="database">▤ Database Management</button>
+    <button class="nav-item" data-page="audit">◷ Audit Logs</button>
+    <button class="nav-item" data-page="rules">⚙ Manage Detection Types</button>
+
+    <div class="nav-label">PREFERENCES</div>
+    <button class="nav-item" data-page="settings">⚙ Settings</button>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h1 id="page-title">Dashboard</h1>
+        <div class="subtitle" id="page-subtitle">Monitor document scanning and sensitive data.</div>
+      </div>
+      <span class="badge">Desktop application</span>
+    </header>
+
+    <div id="global-message"></div>
+
+    <!-- DASHBOARD -->
+    <section id="page-dashboard" class="page active">
+      <div class="grid">
+        <div class="card">
+          <div class="stat-icon">📄</div>
+          <div class="stat-label">Files Scanned</div>
+          <div class="stat-number" id="files-count">0</div>
+        </div>
+        <div class="card">
+          <div class="stat-icon">🔎</div>
+          <div class="stat-label">PII Matches</div>
+          <div class="stat-number" id="matches-count">0</div>
+        </div>
+        <div class="card">
+          <div class="stat-icon">⚠️</div>
+          <div class="stat-label">Files With Findings</div>
+          <div class="stat-number" id="issues-count">0</div>
+        </div>
+        <div class="card">
+          <div class="stat-icon">👥</div>
+          <div class="stat-label">Database Records</div>
+          <div class="stat-number" id="people-count">0</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Welcome to PII Scanner Agent</h2>
+        <p class="muted">Scan supported documents for possible personal information, manage records, and review database audit activity.</p>
+        <div class="toolbar">
+          <button class="btn btn-primary" data-go="scanner">Start a Scan</button>
+          <button class="btn" data-go="admin">Open Admin Panel</button>
+          <button class="btn" data-go="database">View Database</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Recent Scan Activity</h2>
+        <div id="dashboard-recent" class="empty">No files scanned yet.</div>
+      </div>
+    </section>
+
+    <!-- DOCUMENT SCANNER -->
+    <section id="page-scanner" class="page">
+      <div class="card">
+        <h2>Scan Documents</h2>
+        <input value="PDF, DOCX, DOC, XLSX, XLS, PPTX, RTF, ODT, ODP, ODS, ZIP, TXT, CSV, TSV, LOG, JSON, XML, YAML, MD, HTML, INI, CFG, CONF, SQL, EML, JS, PY, JAVA, CS, PHP, BAT, SH, PS1" readonly>
+        <div class="toolbar">
+          <button id="browse-files" class="btn">＋ Browse Files</button>
+          <button id="browse-folder" class="btn">▣ Browse Folder</button>
+          <button id="clear-files" class="btn">Clear Selection</button>
+        </div>
+
+        <div class="field">
+          <label for="drive-select">Local drive</label>
+          <div class="toolbar" style="margin:0">
+            <select id="drive-select" style="max-width:160px"></select>
+            <button id="add-drive" class="btn">▤ Add Drive Files</button>
+          </div>
+          <small class="muted">
+            Finds every supported file on the drive. System folders such as
+            Windows and Program Files are skipped.
+          </small>
+        </div>
+
+        <div class="field">
+          <label for="pii-type">PII type to detect</label>
+          <select id="pii-type">
+            <option value="all">All supported types</option>
+            <option value="email">Email addresses</option>
+            <option value="phone">Phone numbers</option>
+            <option value="aadhaar">Aadhaar-like numbers</option>
+            <option value="pan">PAN-like numbers</option>
+            <option value="ip">IPv4 addresses</option>
+            <option value="creditCard">Credit-card-like numbers</option>
+            <option value="dob">Date of birth-like values</option>
+          </select>
+        </div>
+
+        <ul id="selected-files" class="file-list">
+          <li class="muted">No files selected.</li>
+        </ul>
+
+        <div class="toolbar" style="margin-top:18px">
+          <button id="scan-button" class="btn btn-primary">Start Scan</button>
+          <button id="export-results" class="btn">Export Results to CSV</button>
+        </div>
+        <div id="scan-message"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-heading">
+          <h2>Scan Results</h2>
+          <span class="muted" id="result-count">0 findings</span>
+        </div>
+                <div id="unique-summary"></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>File</th>
+                <th>PII Type</th>
+                <th>Detected Value</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="results-body">
+              <tr><td colspan="4" class="empty">No scan results yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCAN HISTORY -->
+    <section id="page-history" class="page">
+      <div class="card">
+        <div class="section-heading">
+          <h2>Scan History</h2>
+          <button class="btn" id="clear-history">Clear History</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>File</th><th>Findings</th><th>Status</th><th>Scanned At</th></tr>
+            </thead>
+            <tbody id="history-body">
+              <tr><td colspan="4" class="empty">No scan history available.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ADMIN PANEL -->
+    <section id="page-admin" class="page">
+      <div class="grid">
+        <div class="card">
+          <div class="stat-label">Total Records</div>
+          <div class="stat-number" id="admin-total">0</div>
+        </div>
+        <div class="card">
+          <div class="stat-label">Records With Email</div>
+          <div class="stat-number" id="admin-emails">0</div>
+        </div>
+        <div class="card">
+          <div class="stat-label">Records With Phone</div>
+          <div class="stat-number" id="admin-phones">0</div>
+        </div>
+        <div class="card">
+          <div class="stat-label">Audit Entries</div>
+          <div class="stat-number" id="admin-audits">0</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-heading">
+          <div>
+            <h2>Admin Panel</h2>
+            <div class="muted">Manage person records stored in the local database.</div>
+          </div>
+          <button class="btn btn-primary" id="new-person">＋ Add Person</button>
+        </div>
+
+        <div id="admin-message"></div>
+
+        <div class="toolbar">
+          <input id="people-search" class="search-input" type="search" placeholder="Search name, email, phone or PAN...">
+          <button id="search-people" class="btn">Search</button>
+          <button id="refresh-people" class="btn">Refresh</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>ID</th><th>Full Name</th><th>Email</th><th>Phone</th><th>PAN</th><th>Created</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="people-body">
+              <tr><td colspan="7" class="empty">Loading records...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card hidden" id="person-form-card">
+        <div class="section-heading">
+          <h2 id="person-form-title">Add Person</h2>
+          <button class="btn" id="cancel-person">Cancel</button>
+        </div>
+
+        <div id="person-form-message"></div>
+
+        <form id="person-form">
+          <input type="hidden" id="person-id">
+
+          <div class="form-grid">
+            <div class="field">
+              <label for="person-name">Full Name *</label>
+              <input id="person-name" maxlength="150" required>
+            </div>
+
+            <div class="field">
+              <label for="person-email">Email</label>
+              <input id="person-email" type="email" maxlength="200">
+            </div>
+
+            <div class="field">
+              <label for="person-phone">Phone</label>
+              <input id="person-phone" maxlength="200">
+            </div>
+
+            <div class="field">
+              <label for="person-aadhaar">Aadhaar</label>
+              <input id="person-aadhaar" maxlength="200" autocomplete="off">
+            </div>
+
+            <div class="field">
+              <label for="person-pan">PAN</label>
+              <input id="person-pan" maxlength="200">
+            </div>
+
+            <div class="field full-width">
+              <label for="person-notes">Notes</label>
+              <textarea id="person-notes" rows="3" maxlength="2000"></textarea>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <button type="submit" class="btn btn-primary" id="save-person">Save Record</button>
+            <button type="button" class="btn" id="reset-person-form">Reset</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- DATABASE MANAGEMENT -->
+    <section id="page-database" class="page">
+      <div class="card">
+        <h2>Database Management</h2>
+        <p class="muted">View records stored in the local SQLite database.</p>
+
+        <div class="grid">
+          <div>
+            <div class="stat-label">Database Engine</div>
+            <div style="font-weight:700;margin-top:8px">SQLite (sql.js)</div>
+          </div>
+          <div>
+            <div class="stat-label">People Records</div>
+            <div class="stat-number" id="db-people-count">0</div>
+          </div>
+          <div>
+            <div class="stat-label">Audit Entries</div>
+            <div class="stat-number" id="db-audit-count">0</div>
+          </div>
+          <div>
+            <div class="stat-label">Storage</div>
+            <div style="font-weight:700;margin-top:8px">Local application data</div>
+          </div>
+        </div>
+
+        <div class="notice">
+          Development reminder: use fictional records until administrator authentication and appropriate protection for sensitive values are implemented.
+        </div>
+
+        <div class="toolbar">
+          <button class="btn btn-primary" id="db-refresh">Refresh Database View</button>
+          <button class="btn" data-go="admin">Manage Records</button>
+          <button class="btn" data-go="audit">View Audit Logs</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>People Table Preview</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>PAN</th><th>Updated</th></tr>
+            </thead>
+            <tbody id="db-people-body">
+              <tr><td colspan="6" class="empty">Loading records...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- AUDIT LOGS -->
+    <section id="page-audit" class="page">
+      <div class="card">
+        <div class="section-heading">
+          <div>
+            <h2>Audit Logs</h2>
+            <div class="muted">Review additions, updates and deletions of person records.</div>
+          </div>
+          <button class="btn" id="refresh-audit">Refresh Logs</button>
+        </div>
+
+        <div id="audit-message"></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Log ID</th><th>Action</th><th>Person ID</th><th>Details</th><th>Date</th></tr>
+            </thead>
+            <tbody id="audit-body">
+              <tr><td colspan="5" class="empty">Loading audit logs...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- MANAGE DETECTION TYPES -->
+    <section id="page-rules" class="page">
+      <div class="card">
+        <div class="section-heading">
+          <div>
+            <h2>Manage Detection Types</h2>
+            <div class="muted">Create custom PII detection rules without changing the scanner source code.</div>
+          </div>
+          <button class="btn btn-primary" id="new-rule">＋ Add Detection Type</button>
+        </div>
+
+        <div id="rules-message"></div>
+
+        <div class="notice">
+          Type a fictional example value (for example SBIN0001234) and click Generate Pattern.
+          Enabled rules appear in the Scan Documents dropdown.
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>ID</th><th>Detection Name</th><th>Rule Key</th><th>Pattern</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="rules-body">
+              <tr><td colspan="6" class="empty">Loading detection rules...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card hidden" id="rule-form-card">
+        <div class="section-heading">
+          <h2 id="rule-form-title">Add Detection Type</h2>
+          <button class="btn" id="cancel-rule">Cancel</button>
+        </div>
+
+        <div id="rule-form-message"></div>
+
+        <form id="rule-form">
+          <input type="hidden" id="rule-id">
+
+          <div class="form-grid">
+            <div class="field">
+              <label for="rule-name">Detection Name *</label>
+              <input id="rule-name" placeholder="Example: IFSC Code" maxlength="100" required>
+            </div>
+
+            <div class="field">
+              <label for="rule-key">Unique Rule Key *</label>
+              <input id="rule-key" placeholder="Example: ifsc" maxlength="50"
+                     pattern="[a-zA-Z][a-zA-Z0-9_\-]*" required>
+            </div>
+
+            <div class="field full-width">
+              <label for="rule-description">Description</label>
+              <input id="rule-description" placeholder="What does this rule detect?" maxlength="500">
+            </div>
+
+            <div class="field full-width">
+              <label for="rule-sample">Example Value (use fictional data)</label>
+              <input id="rule-sample" placeholder="Example: SBIN0001234 or EMP-2024-0012" maxlength="200">
+              <div class="toolbar" style="margin:8px 0 0">
+                <button type="button" class="btn btn-small" id="generate-pattern">⚡ Generate Pattern</button>
+                <label class="check-label">
+                  <input type="checkbox" id="gen-ignore-case"> Ignore letter case
+                </label>
+                <label class="check-label">
+                  <input type="checkbox" id="gen-fixed-digits"> Keep digits exactly as typed
+                </label>
+              </div>
+              <small class="muted">
+                The pattern is built from the shape of the example (letters, digits, symbols).
+                Always click Test Pattern and review it before saving.
+              </small>
+            </div>
+
+            <div class="field full-width">
+              <label for="rule-pattern">Regular Expression Pattern *</label>
+              <textarea id="rule-pattern" rows="3" maxlength="1000" required
+                placeholder="Example: \b[A-Z]{4}0[A-Z0-9]{6}\b"></textarea>
+              <small class="muted">Enter the pattern without surrounding slashes.</small>
+            </div>
+
+            <div class="field full-width">
+              <label for="rule-test-text">Sample Text for Testing</label>
+              <textarea id="rule-test-text" rows="2"
+                placeholder="Example: My IFSC is SBIN0001234 and not ABC0001234"></textarea>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <button type="button" class="btn" id="test-rule">Test Pattern</button>
+            <button type="submit" class="btn btn-primary" id="save-rule">Save Detection Type</button>
+            <button type="button" class="btn" id="reset-rule">Reset</button>
+          </div>
+
+          <div id="rule-test-result"></div>
+        </form>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="page-settings" class="page">
+      <div class="card">
+        <h2>Settings</h2>
+        <p class="muted">Application information and privacy reminders.</p>
+
+        <div class="notice">
+          Scan findings and scan history are kept in memory for this session. Database records are stored separately.
+        </div>
+
+        <div class="field">
+          <label>Application</label>
+          <input value="PII Scanner Agent" readonly>
+        </div>
+
+        <div class="field">
+          <label>Supported file formats</label>
+          <input value="PDF, DOCX, DOC, XLSX, XLS, XLSM, XLSB, PPTX, RTF, ODT, ODP, ODS, ZIP, PNG, JPG, JPEG, BMP, WEBP, TXT, CSV, TSV, LOG, JSON, JSONL, XML, YAML, TOML, MD, HTML, CSS, INI, CFG, CONF, SQL, EML, ICS, VCF, JS, TS, PY, JAVA, CS, PHP, C, CPP, GO, RB, BAT, SH, PS1 and more" readonly>
+        </div>
+
+        <p class="muted">Protect real personal information with access controls, encryption, secure backups and a retention policy.</p>
+      </div>
+    </section>
+
+    <div class="footer-note">PII Scanner Agent · Local desktop application</div>
+  </main>
+</div>
+
+<script>
+  const pageTitles = {
+    dashboard: ["Dashboard", "Monitor document scanning and sensitive data."],
+    scanner: ["Scan Documents", "Find possible personal information in supported files."],
+    history: ["Scan History", "Review scanning activity from this session."],
+    admin: ["Admin Panel", "Manage local person records."],
+    database: ["Database Management", "View the local database and record counts."],
+    audit: ["Audit Logs", "Review changes made to person records."],
+    rules: ["Manage Detection Types", "Add and manage custom PII detection rules."],
+    settings: ["Settings", "Application preferences and privacy information."]
+  };
+
+  const pages = document.querySelectorAll(".page");
+  const navItems = document.querySelectorAll(".nav-item");
+
+  let selectedFiles = [];
+  let latestResults = [];
+  let scanHistory = [];
+
+  function showMessage(elementId, message, type = "info") {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+
+    element.replaceChildren();
+
+    if (!message) return;
+
+    const div = document.createElement("div");
+    div.className = "notice" +
+      (type === "error" ? " error" : type === "success" ? " success" : "");
+    div.textContent = message;
+    element.appendChild(div);
+  }
+
+  function showGlobalError(message) {
+    showMessage("global-message", message, "error");
+  }
+
+  function clearGlobalMessage() {
+    document.getElementById("global-message").replaceChildren();
+  }
+
+  function goToPage(pageName) {
+    if (!pageTitles[pageName]) return;
+
+    pages.forEach(page =>
+      page.classList.toggle("active", page.id === "page-" + pageName)
+    );
+
+    navItems.forEach(item =>
+      item.classList.toggle("active", item.dataset.page === pageName)
+    );
+
+    document.getElementById("page-title").textContent = pageTitles[pageName][0];
+    document.getElementById("page-subtitle").textContent = pageTitles[pageName][1];
+
+    clearGlobalMessage();
+
+    if (pageName === "admin") loadPeople();
+    if (pageName === "database") loadDatabaseView();
+    if (pageName === "audit") loadAuditLogs();
+    if (pageName === "rules") loadDetectionRules();
+  }
+
+  navItems.forEach(item =>
+    item.addEventListener("click", () => goToPage(item.dataset.page))
+  );
+
+  document.querySelectorAll("[data-go]").forEach(button => {
+    button.addEventListener("click", () => goToPage(button.dataset.go));
+  });
+
+  function addCell(row, value) {
+    const cell = document.createElement("td");
+    cell.textContent =
+      value === null || value === undefined || value === ""
+        ? "—"
+        : String(value);
+    row.appendChild(cell);
+    return cell;
+  }
+
+  function emptyRow(tbody, colspan, message) {
+    tbody.replaceChildren();
+
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+
+    cell.colSpan = colspan;
+    cell.className = "empty";
+    cell.textContent = message;
+
+    row.appendChild(cell);
+    tbody.appendChild(row);
+  }
+
+  function formatDate(value) {
+    if (!value) return "—";
+    return String(value).replace("T", " ").replace(/\.\d+Z?$/, "");
+  }
+
+  // FILE SELECTION
+
+  function setSelectedFiles(files) {
+    selectedFiles = [...new Set(files || [])];
+
+    const list = document.getElementById("selected-files");
+    list.replaceChildren();
+
+    if (!selectedFiles.length) {
+      const li = document.createElement("li");
+      li.className = "muted";
+      li.textContent = "No files selected.";
+      list.appendChild(li);
+      return;
+    }
+
+    const MAX_SHOWN = 200;
+
+    selectedFiles.slice(0, MAX_SHOWN).forEach(file => {
+      const li = document.createElement("li");
+      const name = document.createElement("span");
+
+      name.textContent = file.split(/[\\/]/).pop();
+      name.title = file;
+
+      const remove = document.createElement("button");
+      remove.className = "btn btn-small";
+      remove.textContent = "Remove";
+      remove.addEventListener("click", () => {
+        setSelectedFiles(selectedFiles.filter(item => item !== file));
+      });
+
+      li.append(name, remove);
+      list.appendChild(li);
+    });
+
+    const summary = document.createElement("li");
+    summary.className = "muted";
+    summary.textContent = selectedFiles.length > MAX_SHOWN
+      ? "Showing first " + MAX_SHOWN + " of " + selectedFiles.length + " selected files."
+      : selectedFiles.length + " file(s) selected.";
+    list.appendChild(summary);
+  }
+
+  document.getElementById("browse-files").addEventListener("click", async () => {
+    try {
+      const files = await window.piiScanner.selectFiles();
+      setSelectedFiles([...selectedFiles, ...files]);
+    } catch (error) {
+      showMessage("scan-message", error.message, "error");
+    }
+  });
+
+  document.getElementById("browse-folder").addEventListener("click", async () => {
+    try {
+      const files = await window.piiScanner.selectFolder();
+      setSelectedFiles([...selectedFiles, ...files]);
+    } catch (error) {
+      showMessage("scan-message", error.message, "error");
+    }
+  });
+
+  document.getElementById("clear-files").addEventListener("click", () => {
+    setSelectedFiles([]);
+  });
+
+  // SCANNING
+
+  document.getElementById("scan-button").addEventListener("click", async () => {
+    if (!selectedFiles.length) {
+      showMessage("scan-message", "Please select at least one file or folder first.", "error");
+      return;
+    }
+
+    const button = document.getElementById("scan-button");
+    button.disabled = true;
+    button.textContent = "Scanning...";
+
+    showMessage("scan-message", "Scanning selected documents...");
+
+    try {
+      latestResults = await window.piiScanner.scanFiles(
+        selectedFiles,
+        document.getElementById("pii-type").value
+      );
+
+      const now = new Date().toLocaleString();
+
+      latestResults.forEach(result => {
+        scanHistory.unshift({
+          fileName: result.fileName,
+          totalFindings: result.totalFindings,
+          status: result.status,
+          scannedAt: now
+        });
+      });
+
+      renderScanResults();
+      renderHistory();
+      updateDashboard();
+
+      showMessage("scan-message", "Scan completed.", "success");
+    } catch (error) {
+      showMessage("scan-message", "Scan failed: " + error.message, "error");
+    } finally {
+      button.disabled = false;
+      button.textContent = "Start Scan";
+    }
+  });
+
+  // DISPLAY COMPLETE ORIGINAL VALUES
+
+  function renderScanResults() {
+    const tbody = document.getElementById("results-body");
+    tbody.replaceChildren();
+
+    let total = 0;
+
+    latestResults.forEach(result => {
+      if (!result.findings.length) {
+        const row = document.createElement("tr");
+
+        addCell(row, result.fileName);
+        addCell(row, result.status === "error" ? "Error" : "No findings");
+        addCell(row, result.status === "error" ? result.error : "—");
+
+        const status = addCell(row, "");
+        const badge = document.createElement("span");
+
+        badge.className =
+          "badge " + (result.status === "error" ? "badge-danger" : "badge-success");
+        badge.textContent = result.status === "error" ? "Error" : "Clean";
+
+        status.appendChild(badge);
+        tbody.appendChild(row);
+      } else {
+        result.findings.forEach(finding => {
+          total++;
+
+          const row = document.createElement("tr");
+
+          addCell(row, result.fileName);
+          addCell(row, finding.type);
+          addCell(row, finding.value);
+
+          const status = addCell(row, "");
+          const badge = document.createElement("span");
+
+          badge.className = "badge badge-warning";
+          badge.textContent = "Review needed";
+
+          status.appendChild(badge);
+          tbody.appendChild(row);
+        });
+      }
+    });
+
+    if (!latestResults.length) {
+      emptyRow(tbody, 4, "No scan results yet.");
+    }
+
+    document.getElementById("result-count").textContent = total + " findings";
+    renderUniqueSummary();
+  }
+
+    // UNIQUE PII COUNT
+
+  function renderUniqueSummary() {
+    const box = document.getElementById("unique-summary");
+    box.replaceChildren();
+
+    const byType = new Map();
+    const allUnique = new Set();
+    let total = 0;
+
+    latestResults.forEach(result => {
+      result.findings.forEach(finding => {
+        total++;
+
+        const value = String(finding.value).trim().toLowerCase();
+
+        if (!byType.has(finding.type)) {
+          byType.set(finding.type, { total: 0, values: new Set() });
+        }
+
+        const entry = byType.get(finding.type);
+        entry.total++;
+        entry.values.add(value);
+
+        allUnique.add(finding.type + "|" + value);
+      });
+    });
+
+    if (!total) return;
+
+    const notice = document.createElement("div");
+    notice.className = "notice";
+    notice.textContent =
+      "Total findings: " + total +
+      "  |  Unique PII values: " + allUnique.size +
+      "  |  Duplicates: " + (total - allUnique.size);
+    box.appendChild(notice);
+
+    const wrap = document.createElement("div");
+    wrap.className = "table-wrap";
+    wrap.style.marginBottom = "16px";
+
+    const table = document.createElement("table");
+    const thead = document.createElement("thead");
+    const headRow = document.createElement("tr");
+
+    ["PII Type", "Total Found", "Unique Values"].forEach(title => {
+      const th = document.createElement("th");
+      th.textContent = title;
+      headRow.appendChild(th);
+    });
+
+    thead.appendChild(headRow);
+
+    const tbody = document.createElement("tbody");
+
+    [...byType.entries()]
+      .sort((a, b) => b[1].values.size - a[1].values.size)
+      .forEach(([type, entry]) => {
+        const row = document.createElement("tr");
+        addCell(row, type);
+        addCell(row, entry.total);
+        addCell(row, entry.values.size);
+        tbody.appendChild(row);
+      });
+
+    table.append(thead, tbody);
+    wrap.appendChild(table);
+    box.appendChild(wrap);
+  }
+
+  function renderHistory() {
+    const tbody = document.getElementById("history-body");
+    tbody.replaceChildren();
+
+    if (!scanHistory.length) {
+      emptyRow(tbody, 4, "No scan history available.");
+      return;
+    }
+
+    scanHistory.forEach(item => {
+      const row = document.createElement("tr");
+
+      addCell(row, item.fileName);
+      addCell(row, item.totalFindings);
+
+      const statusCell = addCell(row, "");
+      const badge = document.createElement("span");
+
+      badge.className =
+        "badge " + (item.status === "success" ? "badge-success" : "badge-danger");
+      badge.textContent = item.status;
+
+      statusCell.appendChild(badge);
+      addCell(row, item.scannedAt);
+
+      tbody.appendChild(row);
+    });
+  }
+
+  function updateDashboard() {
+    document.getElementById("files-count").textContent = scanHistory.length;
+
+    document.getElementById("matches-count").textContent =
+      scanHistory.reduce((sum, item) => sum + item.totalFindings, 0);
+
+    document.getElementById("issues-count").textContent =
+      scanHistory.filter(item => item.totalFindings > 0).length;
+
+    const recent = document.getElementById("dashboard-recent");
+    recent.replaceChildren();
+
+    if (!scanHistory.length) {
+      recent.className = "empty";
+      recent.textContent = "No files scanned yet.";
+      return;
+    }
+
+    recent.className = "table-wrap";
+
+    const table = document.createElement("table");
+    const thead = document.createElement("thead");
+    const headRow = document.createElement("tr");
+
+    ["File", "Findings", "Scanned At"].forEach(title => {
+      const th = document.createElement("th");
+      th.textContent = title;
+      headRow.appendChild(th);
+    });
+
+    thead.appendChild(headRow);
+
+    const tbody = document.createElement("tbody");
+
+    scanHistory.slice(0, 5).forEach(item => {
+      const row = document.createElement("tr");
+
+      addCell(row, item.fileName);
+      addCell(row, item.totalFindings);
+      addCell(row, item.scannedAt);
+
+      tbody.appendChild(row);
+    });
+
+    table.append(thead, tbody);
+    recent.appendChild(table);
+  }
+
+  document.getElementById("clear-history").addEventListener("click", () => {
+    if (!confirm("Clear scan history for this session?")) return;
+
+    scanHistory = [];
+    latestResults = [];
+
+    renderHistory();
+    renderScanResults();
+    updateDashboard();
+  });
+
+  // CSV EXPORT: COMPLETE ORIGINAL VALUES
+
+  document.getElementById("export-results").addEventListener("click", () => {
+    const rows = [["File", "PII Type", "Detected Value", "Position", "Status"]];
+
+    latestResults.forEach(result => {
+      if (!result.findings.length) {
+        rows.push([result.fileName, "—", "—", "—", result.status]);
+      } else {
+        result.findings.forEach(finding => {
+          rows.push([
+            result.fileName,
+            finding.type,
+            finding.value,
+            finding.index,
+            "Review needed"
+          ]);
+        });
+      }
+    });
+
+    if (rows.length === 1) {
+      showMessage("scan-message", "There are no results to export.", "error");
+      return;
+    }
+
+    const csv = rows.map(row =>
+      row.map(value =>
+        '"' + String(value ?? "").replace(/"/g, '""') + '"'
+      ).join(",")
+    ).join("\r\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "pii-scan-results.csv";
+    link.click();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+
+  // ADMIN PANEL
+
+  const personFormCard = document.getElementById("person-form-card");
+  const personForm = document.getElementById("person-form");
+
+  function resetPersonForm() {
+    personForm.reset();
+    document.getElementById("person-id").value = "";
+    document.getElementById("person-form-title").textContent = "Add Person";
+    document.getElementById("save-person").textContent = "Save Record";
+    showMessage("person-form-message", "");
+  }
+
+  document.getElementById("new-person").addEventListener("click", () => {
+    resetPersonForm();
+    personFormCard.classList.remove("hidden");
+    personFormCard.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  document.getElementById("cancel-person").addEventListener("click", () => {
+    personFormCard.classList.add("hidden");
+    resetPersonForm();
+  });
+
+  document.getElementById("reset-person-form").addEventListener("click", resetPersonForm);
+
+  async function loadPeople() {
+    const tbody = document.getElementById("people-body");
+    emptyRow(tbody, 7, "Loading records...");
+
+    try {
+      const search = document.getElementById("people-search").value.trim();
+      const people = await window.piiScanner.listPeople(search);
+
+      renderPeople(people);
+      updateAdminStats(people);
+      showMessage("admin-message", "");
+    } catch (error) {
+      emptyRow(tbody, 7, "Could not load records.");
+      showMessage("admin-message", "Database error: " + error.message, "error");
+    }
+  }
+
+  function renderPeople(people) {
+    const tbody = document.getElementById("people-body");
+    tbody.replaceChildren();
+
+    if (!people.length) {
+      emptyRow(tbody, 7, "No records found. Click Add Person to create a record.");
+      return;
+    }
+
+    people.forEach(person => {
+      const row = document.createElement("tr");
+
+      addCell(row, person.id);
+      addCell(row, person.full_name);
+      addCell(row, person.email);
+      addCell(row, person.phone);
+      addCell(row, person.pan);
+      addCell(row, formatDate(person.created_at));
+
+      const actions = addCell(row, "");
+
+      const edit = document.createElement("button");
+      edit.className = "btn btn-small";
+      edit.textContent = "Edit";
+      edit.addEventListener("click", () => editPerson(person.id));
+
+      const remove = document.createElement("button");
+      remove.className = "btn btn-small btn-danger";
+      remove.style.marginLeft = "6px";
+      remove.textContent = "Delete";
+      remove.addEventListener("click", () => deletePerson(person.id));
+
+      actions.append(edit, remove);
+      tbody.appendChild(row);
+    });
+  }
+
+  function updateAdminStats(people) {
+    document.getElementById("admin-total").textContent = people.length;
+    document.getElementById("admin-emails").textContent =
+      people.filter(person => person.email).length;
+    document.getElementById("admin-phones").textContent =
+      people.filter(person => person.phone).length;
+
+    document.getElementById("people-count").textContent = people.length;
+    document.getElementById("db-people-count").textContent = people.length;
+  }
+
+  document.getElementById("search-people").addEventListener("click", loadPeople);
+  document.getElementById("refresh-people").addEventListener("click", loadPeople);
+
+  document.getElementById("people-search").addEventListener("keydown", event => {
+    if (event.key === "Enter") loadPeople();
+  });
+
+  personForm.addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const id = document.getElementById("person-id").value;
+
+    const person = {
+      full_name: document.getElementById("person-name").value.trim(),
+      email: document.getElementById("person-email").value.trim(),
+      phone: document.getElementById("person-phone").value.trim(),
+      aadhaar: document.getElementById("person-aadhaar").value.trim(),
+      pan: document.getElementById("person-pan").value.trim().toUpperCase(),
+      notes: document.getElementById("person-notes").value.trim()
+    };
+
+    const button = document.getElementById("save-person");
+    button.disabled = true;
+    button.textContent = "Saving...";
+
+    try {
+      if (id) {
+        await window.piiScanner.updatePerson(Number(id), person);
+        showMessage("admin-message", "Person record updated successfully.", "success");
+      } else {
+        await window.piiScanner.addPerson(person);
+        showMessage("admin-message", "Person record added successfully.", "success");
+      }
+
+      personFormCard.classList.add("hidden");
+      resetPersonForm();
+
+      await loadPeople();
+      await loadAuditLogs();
+      await loadDatabaseView();
+    } catch (error) {
+      showMessage("person-form-message", error.message || "Could not save record.", "error");
+    } finally {
+      button.disabled = false;
+      button.textContent = "Save Record";
+    }
+  });
+
+  async function editPerson(id) {
+    try {
+      const person = await window.piiScanner.getPerson(id);
+
+      if (!person) {
+        showMessage("admin-message", "Record not found.", "error");
+        return;
+      }
+
+      document.getElementById("person-id").value = person.id;
+      document.getElementById("person-name").value = person.full_name || "";
+      document.getElementById("person-email").value = person.email || "";
+      document.getElementById("person-phone").value = person.phone || "";
+      document.getElementById("person-aadhaar").value = person.aadhaar || "";
+      document.getElementById("person-pan").value = person.pan || "";
+      document.getElementById("person-notes").value = person.notes || "";
+
+      document.getElementById("person-form-title").textContent = "Edit Person";
+      document.getElementById("save-person").textContent = "Update Record";
+
+      personFormCard.classList.remove("hidden");
+      personFormCard.scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (error) {
+      showMessage("admin-message", error.message, "error");
+    }
+  }
+
+  async function deletePerson(id) {
+    if (!confirm("Delete this record? This action cannot be undone.")) return;
+
+    try {
+      await window.piiScanner.deletePerson(id);
+
+      showMessage("admin-message", "Record deleted successfully.", "success");
+
+      await loadPeople();
+      await loadAuditLogs();
+      await loadDatabaseView();
+    } catch (error) {
+      showMessage("admin-message", error.message, "error");
+    }
+  }
+
+  // DATABASE VIEW
+
+  async function loadDatabaseView() {
+    try {
+      const people = await window.piiScanner.listPeople("");
+      const audits = await window.piiScanner.listAuditLogs(500);
+
+      updateAdminStats(people);
+
+      document.getElementById("db-audit-count").textContent = audits.length;
+      document.getElementById("admin-audits").textContent = audits.length;
+
+      const tbody = document.getElementById("db-people-body");
+      tbody.replaceChildren();
+
+      if (!people.length) {
+        emptyRow(tbody, 6, "No records in the database yet.");
+        return;
+      }
+
+      people.forEach(person => {
+        const row = document.createElement("tr");
+
+        addCell(row, person.id);
+        addCell(row, person.full_name);
+        addCell(row, person.email);
+        addCell(row, person.phone);
+        addCell(row, person.pan);
+        addCell(row, formatDate(person.updated_at));
+
+        tbody.appendChild(row);
+      });
+    } catch (error) {
+      showGlobalError("Could not load database view: " + error.message);
+    }
+  }
+
+  document.getElementById("db-refresh").addEventListener("click", loadDatabaseView);
+
+  // AUDIT LOGS
+
+  async function loadAuditLogs() {
+    const tbody = document.getElementById("audit-body");
+    emptyRow(tbody, 5, "Loading audit logs...");
+
+    try {
+      const logs = await window.piiScanner.listAuditLogs(500);
+      tbody.replaceChildren();
+
+      document.getElementById("admin-audits").textContent = logs.length;
+      document.getElementById("db-audit-count").textContent = logs.length;
+
+      if (!logs.length) {
+        emptyRow(
+          tbody,
+          5,
+          "No audit entries yet. Adding, editing or deleting a person creates an entry."
+        );
+        return;
+      }
+
+      logs.forEach(log => {
+        const row = document.createElement("tr");
+
+        addCell(row, log.id);
+
+        const actionCell = addCell(row, "");
+        const badge = document.createElement("span");
+
+        badge.className =
+          "badge " +
+          (log.action === "DELETE"
+            ? "badge-danger"
+            : log.action === "CREATE"
+              ? "badge-success"
+              : "badge-warning");
+
+        badge.textContent = log.action;
+        actionCell.appendChild(badge);
+
+        addCell(row, log.person_id);
+        addCell(row, log.details);
+        addCell(row, formatDate(log.created_at));
+
+        tbody.appendChild(row);
+      });
+    } catch (error) {
+      emptyRow(tbody, 5, "Could not load audit logs.");
+      showMessage("audit-message", error.message || "Could not load audit logs.", "error");
+    }
+  }
+
+  document.getElementById("refresh-audit").addEventListener("click", loadAuditLogs);
+
+  // MANAGE DETECTION TYPES
+
+  const ruleFormCard = document.getElementById("rule-form-card");
+  const ruleForm = document.getElementById("rule-form");
+
+  function resetRuleForm() {
+    ruleForm.reset();
+    document.getElementById("rule-id").value = "";
+    document.getElementById("rule-form-title").textContent = "Add Detection Type";
+    document.getElementById("save-rule").textContent = "Save Detection Type";
+    showMessage("rule-form-message", "");
+    showMessage("rule-test-result", "");
+  }
+
+  document.getElementById("new-rule").addEventListener("click", () => {
+    resetRuleForm();
+    ruleFormCard.classList.remove("hidden");
+    ruleFormCard.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  document.getElementById("cancel-rule").addEventListener("click", () => {
+    ruleFormCard.classList.add("hidden");
+    resetRuleForm();
+  });
+
+  document.getElementById("reset-rule").addEventListener("click", resetRuleForm);
+
+  function isRuleEnabled(rule) {
+    return Number(rule.enabled) === 1 || rule.enabled === true;
+  }
+
+  async function loadDetectionRules() {
+    const tbody = document.getElementById("rules-body");
+    emptyRow(tbody, 6, "Loading detection rules...");
+
+    try {
+      const rules = await window.piiScanner.listDetectionRules();
+      renderDetectionRules(rules);
+      refreshScannerDetectionOptions(rules);
+      showMessage("rules-message", "");
+    } catch (error) {
+      emptyRow(tbody, 6, "Could not load detection rules.");
+      showMessage("rules-message", error.message || "Could not load detection rules.", "error");
+    }
+  }
+
+  function renderDetectionRules(rules) {
+    const tbody = document.getElementById("rules-body");
+    tbody.replaceChildren();
+
+    if (!rules || !rules.length) {
+      emptyRow(tbody, 6, "No custom detection rules yet. Click Add Detection Type.");
+      return;
+    }
+
+    rules.forEach(rule => {
+      const row = document.createElement("tr");
+      const enabled = isRuleEnabled(rule);
+
+      addCell(row, rule.id);
+      addCell(row, rule.name);
+      addCell(row, rule.rule_key);
+
+      const patternCell = addCell(row, "");
+      const code = document.createElement("code");
+      code.className = "pattern";
+      code.textContent = rule.pattern;
+      patternCell.appendChild(code);
+
+      const statusCell = addCell(row, "");
+      const badge = document.createElement("span");
+      badge.className = "badge " + (enabled ? "badge-success" : "badge-danger");
+      badge.textContent = enabled ? "Enabled" : "Disabled";
+      statusCell.appendChild(badge);
+
+      const actions = addCell(row, "");
+
+      const edit = document.createElement("button");
+      edit.className = "btn btn-small";
+      edit.textContent = "Edit";
+      edit.addEventListener("click", () => editDetectionRule(rule));
+
+      const toggle = document.createElement("button");
+      toggle.className = "btn btn-small";
+      toggle.style.marginLeft = "6px";
+      toggle.textContent = enabled ? "Disable" : "Enable";
+      toggle.addEventListener("click", () => toggleDetectionRule(rule.id, !enabled));
+
+      const remove = document.createElement("button");
+      remove.className = "btn btn-small btn-danger";
+      remove.style.marginLeft = "6px";
+      remove.textContent = "Delete";
+      remove.addEventListener("click", () => deleteDetectionRule(rule.id));
+
+      actions.append(edit, toggle, remove);
+      tbody.appendChild(row);
+    });
+  }
+
+  // Keeps your built-in options and adds enabled custom rules after them.
+  function refreshScannerDetectionOptions(rules) {
+    const select = document.getElementById("pii-type");
+    const previous = select.value;
+
+    [...select.options]
+      .filter(option => option.value.startsWith("custom:"))
+      .forEach(option => option.remove());
+
+    (rules || []).forEach(rule => {
+      if (!isRuleEnabled(rule)) return;
+
+      const option = document.createElement("option");
+      option.value = "custom:" + rule.id;
+      option.textContent = rule.name + " (custom)";
+      select.appendChild(option);
+    });
+
+    select.value = [...select.options].some(o => o.value === previous)
+      ? previous
+      : "all";
+  }
+
+  function editDetectionRule(rule) {
+    resetRuleForm();
+
+    document.getElementById("rule-id").value = rule.id;
+    document.getElementById("rule-name").value = rule.name || "";
+    document.getElementById("rule-key").value = rule.rule_key || "";
+    document.getElementById("rule-description").value = rule.description || "";
+    document.getElementById("rule-pattern").value = rule.pattern || "";
+
+    document.getElementById("rule-form-title").textContent = "Edit Detection Type";
+    document.getElementById("save-rule").textContent = "Update Detection Type";
+
+    ruleFormCard.classList.remove("hidden");
+    ruleFormCard.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  ruleForm.addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const id = document.getElementById("rule-id").value;
+
+    const rule = {
+      name: document.getElementById("rule-name").value.trim(),
+      rule_key: document.getElementById("rule-key").value.trim(),
+      description: document.getElementById("rule-description").value.trim(),
+      pattern: document.getElementById("rule-pattern").value.trim()
+    };
+
+    try {
+      new RegExp(rule.pattern);
+    } catch (error) {
+      showMessage("rule-form-message", "Invalid regular expression: " + error.message, "error");
+      return;
+    }
+
+    const button = document.getElementById("save-rule");
+    button.disabled = true;
+    button.textContent = "Saving...";
+
+    try {
+      if (id) {
+        await window.piiScanner.updateDetectionRule(Number(id), rule);
+        showMessage("rules-message", "Detection type updated.", "success");
+      } else {
+        await window.piiScanner.addDetectionRule(rule);
+        showMessage("rules-message", "Detection type added.", "success");
+      }
+
+      ruleFormCard.classList.add("hidden");
+      resetRuleForm();
+      await loadDetectionRules();
+    } catch (error) {
+      showMessage("rule-form-message", error.message || "Could not save detection type.", "error");
+    } finally {
+      button.disabled = false;
+      button.textContent = id ? "Update Detection Type" : "Save Detection Type";
+    }
+  });
+
+  async function toggleDetectionRule(id, enabled) {
+    try {
+      await window.piiScanner.toggleDetectionRule(id, enabled);
+      await loadDetectionRules();
+      showMessage("rules-message", "Detection rule status updated.", "success");
+    } catch (error) {
+      showMessage("rules-message", error.message, "error");
+    }
+  }
+
+  async function deleteDetectionRule(id) {
+    if (!confirm("Delete this detection rule?")) return;
+
+    try {
+      await window.piiScanner.deleteDetectionRule(id);
+      await loadDetectionRules();
+      showMessage("rules-message", "Detection rule deleted.", "success");
+    } catch (error) {
+      showMessage("rules-message", error.message, "error");
+    }
+  }
+
+  document.getElementById("test-rule").addEventListener("click", () => {
+    const pattern = document.getElementById("rule-pattern").value.trim();
+    const sample = document.getElementById("rule-test-text").value;
+
+    if (!pattern) {
+      showMessage("rule-test-result", "Enter or generate a pattern first.", "error");
+      return;
+    }
+
+    try {
+      const matches = sample.match(new RegExp(pattern, "gi")) || [];
+
+      showMessage(
+        "rule-test-result",
+        matches.length
+          ? "Matches found (" + matches.length + "): " + matches.join(", ")
+          : "No matches found in the sample text.",
+        matches.length ? "success" : "info"
+      );
+    } catch (error) {
+      showMessage("rule-test-result", "Invalid regex: " + error.message, "error");
+    }
+  });
+
+  // GENERATE PATTERN FROM EXAMPLE
+
+  function charType(ch) {
+    if (/[A-Z]/.test(ch)) return "upper";
+    if (/[a-z]/.test(ch)) return "lower";
+    if (/\d/.test(ch)) return "digit";
+    return "other";
+  }
+
+  function buildPatternFromExample(sample, ignoreCase, fixedDigits) {
+    const escapeLiteral = ch => ch.replace(/[.*+?^${}()|[\]\\\/-]/g, "\\$&");
+    let pattern = "";
+    let i = 0;
+
+    while (i < sample.length) {
+      const ch = sample[i];
+      const type = charType(ch);
+
+      if (type === "other") {
+        pattern += /\s/.test(ch) ? "\\s" : escapeLiteral(ch);
+        i++;
+        continue;
+      }
+
+      if (type === "digit" && fixedDigits) {
+        pattern += ch;
+        i++;
+        continue;
+      }
+
+      let j = i;
+      while (j < sample.length && charType(sample[j]) === type) j++;
+
+      const count = j - i;
+      let cls;
+
+      if (type === "upper") cls = ignoreCase ? "[A-Za-z]" : "[A-Z]";
+      else if (type === "lower") cls = ignoreCase ? "[A-Za-z]" : "[a-z]";
+      else cls = "\\d";
+
+      pattern += cls + (count > 1 ? "{" + count + "}" : "");
+      i = j;
+    }
+
+    return (/^\w/.test(sample) ? "\\b" : "") +
+           pattern +
+           (/\w$/.test(sample) ? "\\b" : "");
+  }
+
+  document.getElementById("generate-pattern").addEventListener("click", () => {
+    const sample = document.getElementById("rule-sample").value.trim();
+
+    if (!sample) {
+      showMessage("rule-form-message", "Enter an example value first.", "error");
+      return;
+    }
+
+    document.getElementById("rule-pattern").value = buildPatternFromExample(
+      sample,
+      document.getElementById("gen-ignore-case").checked,
+      document.getElementById("gen-fixed-digits").checked
+    );
+
+    document.getElementById("rule-test-text").value = sample;
+
+    showMessage(
+      "rule-form-message",
+      "Pattern generated. Click Test Pattern to verify it, then edit if needed.",
+      "success"
+    );
+  });
+
+  // LOCAL DRIVES
+
+  async function loadDrives() {
+    const select = document.getElementById("drive-select");
+    select.replaceChildren();
+
+    try {
+      const drives = await window.piiScanner.listDrives();
+
+      drives.forEach(drive => {
+        const option = document.createElement("option");
+        option.value = drive;
+        option.textContent = drive;
+        select.appendChild(option);
+      });
+    } catch (error) {
+      showMessage("scan-message", "Could not list drives: " + error.message, "error");
+    }
+  }
+
+  document.getElementById("add-drive").addEventListener("click", async () => {
+    const drive = document.getElementById("drive-select").value;
+
+    if (!drive) {
+      showMessage("scan-message", "No drive available.", "error");
+      return;
+    }
+
+    const button = document.getElementById("add-drive");
+    button.disabled = true;
+    button.textContent = "Finding files...";
+    showMessage("scan-message", "Searching " + drive + " for supported files. This can take a while...");
+
+    try {
+      const result = await window.piiScanner.collectDriveFiles(drive);
+      setSelectedFiles([...selectedFiles, ...result.files]);
+
+      showMessage(
+        "scan-message",
+        result.files.length + " file(s) found on " + drive +
+          (result.truncated ? ". Stopped at the safety limit; narrow the search with Browse Folder." : "."),
+        result.truncated ? "info" : "success"
+      );
+    } catch (error) {
+      showMessage("scan-message", "Drive search failed: " + error.message, "error");
+    } finally {
+      button.disabled = false;
+      button.textContent = "▤ Add Drive Files";
+    }
+  });
+
+  // INITIALIZE UI
+
+  setSelectedFiles([]);
+  updateDashboard();
+
+  window.addEventListener("DOMContentLoaded", async () => {
+    loadDrives();
+
+    try {
+      await loadPeople();
+      await loadDatabaseView();
+      await loadAuditLogs();
+    } catch (error) {
+      showGlobalError("Initialization error: " + error.message);
+    }
+
+    // Load custom rules into the scanner dropdown (ignored if not supported yet).
+    try {
+      const rules = await window.piiScanner.listDetectionRules();
+      refreshScannerDetectionOptions(rules);
+    } catch (error) {
+      console.warn("Detection rules not available:", error.message);
+    }
+  });
+</script>
+</body>
+</html>
